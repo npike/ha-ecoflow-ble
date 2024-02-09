@@ -1,0 +1,5 @@
+{
+    "name": "ecoflow_ble",
+    "render_readme": true,
+    "homeassistant": "2022.12.1"
+  }
