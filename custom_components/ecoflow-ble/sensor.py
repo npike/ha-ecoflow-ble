@@ -1,117 +1,109 @@
-"""Support for Ecoflow ble sensors."""
+"""The ecoflow sensor platform."""
+
 from __future__ import annotations
+from typing import Any
 
-from typing import Optional, Union
+from .ecoflow_ble import EcoflowController
 
-from .ecoflow_ble import DeviceClass, DeviceKey, SensorUpdate, Units
-
-from homeassistant import config_entries
-from homeassistant.components.bluetooth.passive_update_processor import (
-    PassiveBluetoothDataProcessor,
-    PassiveBluetoothDataUpdate,
-    PassiveBluetoothEntityKey,
-    PassiveBluetoothProcessorCoordinator,
-    PassiveBluetoothProcessorEntity,
-)
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import (
-    PERCENTAGE,
-    SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+
+from homeassistant.components.bluetooth.passive_update_coordinator import (
+    PassiveBluetoothCoordinatorEntity,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import PERCENTAGE, UnitOfPressure, UnitOfTemperature
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.sensor import sensor_device_info_to_hass_device_info
-
 from .const import DOMAIN
-
-SENSOR_DESCRIPTIONS = {
-    (DeviceClass.BATTERY, Units.PERCENTAGE): SensorEntityDescription(
-        key=f"{DeviceClass.BATTERY}_{Units.PERCENTAGE}",
-        device_class=SensorDeviceClass.BATTERY,
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    (
-        DeviceClass.SIGNAL_STRENGTH,
-        Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    ): SensorEntityDescription(
-        key=f"{DeviceClass.SIGNAL_STRENGTH}_{Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT}",
-        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-}
-
-
-def _device_key_to_bluetooth_entity_key(
-    device_key: DeviceKey,
-) -> PassiveBluetoothEntityKey:
-    """Convert a device key to an entity key."""
-    return PassiveBluetoothEntityKey(device_key.key, device_key.device_id)
-
-
-def sensor_update_to_bluetooth_data_update(
-    sensor_update: SensorUpdate,
-) -> PassiveBluetoothDataUpdate:
-    """Convert a sensor update to a bluetooth data update."""
-    #_LOGGER.debug("Enter Ecoflow sensor_update_to_bluetooth_data_update")
-    #_LOGGER.debug("Parsing Ecoflow BLE service_info data: %s", sensor_update.entity_values.items())
-    return PassiveBluetoothDataUpdate(
-        devices={
-            device_id: sensor_device_info_to_hass_device_info(device_info)
-            for device_id, device_info in sensor_update.devices.items()
-        },
-        entity_descriptions={
-            _device_key_to_bluetooth_entity_key(device_key): SENSOR_DESCRIPTIONS[
-                (description.device_class, description.native_unit_of_measurement)
-            ]
-            for device_key, description in sensor_update.entity_descriptions.items()
-            if description.device_class and description.native_unit_of_measurement
-        },
-        entity_data={
-            _device_key_to_bluetooth_entity_key(device_key): sensor_values.native_value
-            for device_key, sensor_values in sensor_update.entity_values.items()
-        },
-        entity_names={
-            _device_key_to_bluetooth_entity_key(device_key): sensor_values.name
-            for device_key, sensor_values in sensor_update.entity_values.items()
-        },
-    )
+from .coordinator import EcoflowDataUpdateCoordinator
+from .models import EcoflowData
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: config_entries.ConfigEntry,
+    entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Ecoflow BLE sensors."""
-    coordinator: PassiveBluetoothProcessorCoordinator = hass.data[DOMAIN][
-        entry.entry_id
-    ]
-    processor = PassiveBluetoothDataProcessor(sensor_update_to_bluetooth_data_update)
-    entry.async_on_unload(
-        processor.async_add_entities_listener(
-            EcoflowBluetoothSensorEntity, async_add_entities
-        )
-    )
-    entry.async_on_unload(coordinator.async_register_processor(processor))
+    """Set up platform for ecoflow."""
+    data: EcoflowData = hass.data[DOMAIN][entry.entry_id]
+    entities = []
+    entities.append(BatterySensor(data.coordinator, data.device, entry.title))
+
+    async_add_entities(entities)
 
 
-class EcoflowBluetoothSensorEntity(
-    PassiveBluetoothProcessorEntity[
-        PassiveBluetoothDataProcessor[Optional[Union[float, int]]]
-    ],
-    SensorEntity,
+class EcoflowSensor(
+    PassiveBluetoothCoordinatorEntity[EcoflowDataUpdateCoordinator], SensorEntity
 ):
-    """Representation of a Ecoflow ble sensor."""
+    """Representation of Ecoflow sensor."""
+
+    def __init__(
+        self,
+        coordinator: EcoflowDataUpdateCoordinator,
+        device: EcoflowController,
+        name: str,
+    ) -> None:
+        """Initialize an Ecoflow sensor."""
+        super().__init__(coordinator)
+        self._device = device
+        self._name = name
+
+        print(device)
+        model = "Unknown"
+        if device.serial.startswith("R60"):
+            model = "River 2"
+
+        self._attr_device_info = DeviceInfo(
+            name=device.name,
+            model=model,
+            serial_number=device.serial,
+            manufacturer="Ecoflow",
+            connections={(dr.CONNECTION_BLUETOOTH, device.address)},
+        )
+        self._async_update_attrs()
+
+    @callback
+    def _async_update_attrs(self) -> None:
+        """Handle updating _attr values."""
+        raise NotImplementedError("Not yet implemented.")
+
+    @callback
+    def _handle_coordinator_update(self, *args: Any) -> None:
+        """Handle data update."""
+        self._async_update_attrs()
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Register callbacks."""
+        self.async_on_remove(
+            self._device.register_callback(self._handle_coordinator_update)
+        )
+        return await super().async_added_to_hass()
+
+
+class BatterySensor(EcoflowSensor):
+    _attr_name = "Battery"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
-    def native_value(self) -> int | float | None:
-        """Return the native value."""
-        return self.processor.entity_data.get(self.entity_key)
+    def name(self) -> str:
+        return f"{self._name} Battery"
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return f"{self._device.address}_battery"
+
+    @callback
+    def _async_update_attrs(self) -> None:
+        """Handle updating _attr values."""
+        self._attr_native_value = self._device.battery
