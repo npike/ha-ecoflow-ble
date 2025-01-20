@@ -25,3 +25,12 @@ While I suspect this will work with other Ecoflow devices that broadcast over Bl
 
 </p></details>
 
+<details><summary> RIVER_3 <i>(sensors: 2)</i> </summary>
+<p>
+
+*Sensors*
+- Battery Level
+- RSSI
+
+</p></details>
+

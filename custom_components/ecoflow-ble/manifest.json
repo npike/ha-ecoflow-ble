@@ -2,7 +2,7 @@
     "domain": "ecoflow_ble",
     "name": "Ecoflow BLE",
     "documentation": "https://github.com/npike/ha-ecoflow-ble",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "dependencies": ["bluetooth_adapters"],
     "bluetooth": [
       {

@@ -59,6 +59,8 @@ class EcoflowSensor(
         model = "Unknown"
         if device.serial.startswith("R60"):
             model = "River 2"
+        elif device.serial.startswith("R651"):
+            model = "River 3"
 
         self._attr_device_info = DeviceInfo(
             name=device.name,
