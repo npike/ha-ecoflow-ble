@@ -16,21 +16,26 @@ Once installed, use Add Integration -> Ecoflow BLE.
 
 While I suspect this will work with other Ecoflow devices that broadcast over Bluetooth Low Energy, I have only tested with a River 2.
 
-<details><summary> RIVER_2 <i>(sensors: 2)</i> </summary>
+<details><summary> RIVER_2 <i>(sensors: 1)</i> </summary>
 <p>
 
 *Sensors*
 - Battery Level
-- RSSI
 
 </p></details>
 
-<details><summary> RIVER_3 <i>(sensors: 2)</i> </summary>
+<details><summary> RIVER_3 <i>(sensors: 1)</i> </summary>
 <p>
 
 *Sensors*
 - Battery Level
-- RSSI
 
 </p></details>
 
+<details><summary> DELTA_2 <i>(sensors: 1)</i> </summary>
+<p>
+
+*Sensors*
+- Battery Level
+
+</p></details>
