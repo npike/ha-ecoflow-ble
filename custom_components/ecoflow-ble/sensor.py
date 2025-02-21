@@ -55,16 +55,9 @@ class EcoflowSensor(
         self._device = device
         self._name = name
 
-        print(device)
-        model = "Unknown"
-        if device.serial.startswith("R60"):
-            model = "River 2"
-        elif device.serial.startswith("R651"):
-            model = "River 3"
-
         self._attr_device_info = DeviceInfo(
             name=device.name,
-            model=model,
+            model=device.model,
             serial_number=device.serial,
             manufacturer="Ecoflow",
             connections={(dr.CONNECTION_BLUETOOTH, device.address)},

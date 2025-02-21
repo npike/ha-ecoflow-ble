@@ -93,6 +93,11 @@ class EcoflowController:
         return self._state.name
 
     @property
+    def model(self) -> str:
+        """Get the model of the device."""
+        return self._state.model
+
+    @property
     def serial(self) -> str:
         """Get the serial of the device."""
         return self._state.serial
@@ -112,7 +117,7 @@ class EcoflowController:
     async def update(self) -> None:
         """Update the controller."""
         await self._ensure_connected()
-        _LOGGER.debug("%s: Updating %s", self.name)
+        # _LOGGER.debug("%s: Updating %s", self.name)
 
         await self._execute_disconnect()
 

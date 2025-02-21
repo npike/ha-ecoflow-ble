@@ -14,4 +14,14 @@ def parse_manufacturer_data(data: bytes) -> DeviceInfo:
     battery_raw = hex_representation[34:36]
     battery = int(battery_raw, 16)
 
-    return DeviceInfo(name=serial, serial=serial, battery=battery)
+    model = "Unknown"
+    if serial:
+        # map device serial to product model
+        if serial.startswith("R60"):
+            model = "River 2"
+        elif serial.startswith("R65"):
+            model = "River 3"
+        elif serial.startswith("R33"):
+            model = "Delta 2"
+
+    return DeviceInfo(name=serial, serial=serial, model=model, battery=battery)

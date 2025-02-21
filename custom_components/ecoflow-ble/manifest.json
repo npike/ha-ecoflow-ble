@@ -5,9 +5,11 @@
     "version": "0.0.4",
     "dependencies": ["bluetooth_adapters"],
     "bluetooth": [
-      {
+      {"local_name": "EF-*",
         "connectable": false
-      }
+      },
+      { "local_name": "R33*",
+      "connectable": false }
     ],
     "issue_tracker": "https://github.com/npike/ha-ecoflow-ble/issues",
     "description": "Simple custom integration for Ecoflow devices that reports battery percentage via ble.",

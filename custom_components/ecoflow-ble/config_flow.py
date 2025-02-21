@@ -38,14 +38,30 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle the bluetooth discovery step."""
+        _LOGGER.debug(
+            "Discovered device: address=%s, name=%s",
+            discovery_info.address,
+            discovery_info.name,
+        )
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
         self._discovery_info = discovery_info
         device: DeviceInfo = parse_manufacturer_data(
             discovery_info.advertisement.manufacturer_data[MANUFACTURER_ID]
         )
-        self.context["title_placeholders"] = {"name": device.name}
-        return await self.async_step_user()
+        self._set_confirm_only()
+        self.context["title_placeholders"] = {"name": f"{device.model} {device.name}"}
+        # return await self.async_step_user()
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("serial"): vol.In(device.serial),
+                    vol.Required("name"): str,
+                }
+            ),
+            errors={},
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

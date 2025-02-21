@@ -7,4 +7,5 @@ from dataclasses import dataclass
 class DeviceInfo:
     name: str
     serial: str
+    model: str | None = "Unknown"
     battery: int | None = None
